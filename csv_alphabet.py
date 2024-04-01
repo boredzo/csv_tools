@@ -13,14 +13,6 @@ def get_from_indexes(orig_row, indexes):
 	permuted_row = [ orig_row[i] for i in indexes ]
 	return permuted_row
 
-def has_nonempty_values(seq):
-	"Iterate through the iterable seq and return True if any non-empty (truthy) value is encountered. Return False if not."
-	for x in seq:
-		if x:
-			return True
-	else:
-		return False
-
 def select_distinct(input_path: pathlib.Path, column_of_interest: str):
 	found_values = set()
 
