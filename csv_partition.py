@@ -7,6 +7,8 @@ import argparse
 import fileinput
 import csv
 import string
+import locale
+locale.setlocale(locale.LC_ALL, '')
 
 def output_path_for_input_path(input_path: pathlib.Path, column_segment_number: int, row_segment_number: int, opts: argparse.Namespace):
 	column_segment_letter = string.ascii_uppercase[column_segment_number]
