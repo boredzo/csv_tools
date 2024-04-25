@@ -59,13 +59,13 @@ def compare_tables_sorted(left_path: pathlib.Path, right_path: pathlib.Path, wri
 				right_match_values = get_from_indexes(right_row, right_match_indexes)
 				if left_match_values < right_match_values:
 					# The right table has skipped an entry.
-					print("Right table is missing entry with match criteria:", ', '.join('{}={}'.format(k, v) for k, v in zip(match_keys, left_match_values)), file=sys.stderr)
+					writer.writerow(prefix_row(left_row, '-'))
 					right_missing_entries = True
 					num_differences += 1
 					left_row = next(left_reader)
 				elif left_match_values > right_match_values:
 					# The left table has skipped an entry.
-					print("Left table is missing entry with match criteria:", ', '.join('{}={}'.format(k, v) for k, v in zip(match_keys, right_match_values)), file=sys.stderr)
+					writer.writerow(prefix_row(right_row, '+'))
 					left_missing_entries = True
 					num_differences += 1
 					right_row = next(right_reader)
