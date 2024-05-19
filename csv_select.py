@@ -98,6 +98,14 @@ operator_classes['<>'] = operator_classes['≠']
 operator_classes['<='] = operator_classes['≤']
 operator_classes['>='] = operator_classes['≥']
 
+# Shell-friendly synonyms.
+operator_classes['EQ'] = operator_classes['=']
+operator_classes['NE'] = operator_classes['≠']
+operator_classes['LT'] = operator_classes['<']
+operator_classes['GT'] = operator_classes['>']
+operator_classes['LE'] = operator_classes['≤']
+operator_classes['GE'] = operator_classes['≥']
+
 class Criterion:
 	def __init__(self, column: SortColumn, evaluator: Evaluator):
 		self.column = column
