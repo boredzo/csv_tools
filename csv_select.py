@@ -53,8 +53,11 @@ class EvaluatorEQ(Evaluator):
 class EvaluatorNE(Evaluator):
 	def __call__(self, value):
 		return self.comparand != value
+# The negative of an operator is equivalent to NOT (A op B). So, for example, NOT (A = B) is (A ≠ B).
 EvaluatorEQ.negative = EvaluatorNE
 EvaluatorNE.negative = EvaluatorEQ
+# The inverse of an operator is the equivalent to exchanging the operands. For example, INV (A = B) is (B = A).
+# Equality is its own inverse, as is inequality. Where inversion becomes important is in the relational operators below.
 EvaluatorEQ.inverse = EvaluatorEQ
 EvaluatorNE.inverse = EvaluatorNE
 
