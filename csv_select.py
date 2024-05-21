@@ -115,8 +115,21 @@ class Criterion:
 #		print('C{}\tO{}\tV{}\tR{}'.format(self.evaluator.comparand, self.evaluator.operator, value, 'TRUE' if self.evaluator(value) else 'FALSE'))
 		return self.evaluator(value)
 
-def select_rows(reader: csv.reader, header: list, criteria: list, writer: csv.writer, opts: argparse.Namespace):
+def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: csv.writer, opts: argparse.Namespace):
 	row_count = 0
+
+	columns_of_interest = opts.only_columns
+	if columns_of_interest:
+		# TODO: Use csv.reader to parse this
+		columns_of_interest = columns_of_interest.split(',')
+		indexes = []
+		for col in columns_of_interest:
+			try:
+				idx = orig_header.index(col)
+			except ValueError:
+				pass
+			else:
+				indexes.append(idx)
 
 	for orig_row in reader:
 		for criterion in criteria:
@@ -124,8 +137,8 @@ def select_rows(reader: csv.reader, header: list, criteria: list, writer: csv.wr
 				break
 		else:
 			if row_count == 0:
-				writer.writerow(header)
-			writer.writerow(orig_row)
+				writer.writerow(header if not columns_of_interest else get_from_indexes(header, indexes))
+			writer.writerow(orig_row if not columns_of_interest else get_from_indexes(orig_row, indexes))
 			row_count += 1
 
 	return row_count
@@ -133,6 +146,7 @@ def select_rows(reader: csv.reader, header: list, criteria: list, writer: csv.wr
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
+	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
 	parser.add_argument('input_path', type=pathlib.Path, help="Path to a file containing CSV data to select from.")
 	parser.add_argument('terms', nargs='+', help="Algebraic expressions defining the criteria. A single expression consists of COLUMN OPERATOR COMPARAND. COLUMN must be the name of one of the columns in the file; OPERATOR must be =, ≠, <, >, ≤, or ≥; COMPARAND is a single fixed value to compare to. An additional word in parentheses between the OPERATOR and COMPARAND indicates the type to interpret all values for that column (including the comparand) as; for example, “total_sold ≤ (int) 4000”. Supported types include str (default), int, and float. Compound expressions can be formed using AND. OR and NOT are not supported at this time.")
 	opts = parser.parse_args()
