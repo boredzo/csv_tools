@@ -6,6 +6,9 @@ import pathlib
 import argparse
 import fileinput
 import csv
+import locale
+
+locale.setlocale(locale.LC_ALL, '')
 
 def output_path_for_input_path(input_path: pathlib.Path, segment_number: int, opts: argparse.Namespace):
 	output_path = (pathlib.Path(str(input_path.with_suffix('')) + '-pt{:04}'.format(segment_number))).with_suffix(input_path.suffix)
