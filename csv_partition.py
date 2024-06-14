@@ -85,7 +85,6 @@ def segment(input_path: pathlib.Path, opts: argparse.Namespace):
 	reader = csv.reader(open(input_path, 'r'))
 	orig_header = next(reader)
 	permutations = list(column_segment_permutations(orig_header, opts))
-	column_labels = string.ascii_uppercase[:len(permutations)]
 
 	def open_files(row_segment_number):
 		out_files = []
