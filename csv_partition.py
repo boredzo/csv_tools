@@ -36,6 +36,9 @@ def make_permutation(header: list, leading_columns: list):
 	except ValueError:
 		print('Header row:', header, file=sys.stderr)
 		raise
+	except TypeError:
+		# None is not iterable. No leading columns were specified.
+		return list(range(len(header)))
 	for i, col in enumerate(header):
 		if col in leading_columns:
 			pass
@@ -54,7 +57,7 @@ def column_segment_permutations(orig_header: list, opts: argparse.Namespace):
 		# We're not segmenting, so return the all permutation.
 		yield all_indexes
 	else:
-		num_leading_columns = len(leading_columns)
+		num_leading_columns = len(leading_columns) if leading_columns else 0
 		num_trailing_columns = opts.columns_per_file - num_leading_columns
 		leading_indexes = all_indexes[:num_leading_columns]
 		trailing_offset = num_leading_columns
