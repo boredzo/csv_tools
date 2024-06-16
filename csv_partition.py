@@ -10,8 +10,56 @@ import string
 import locale
 locale.setlocale(locale.LC_ALL, '')
 
+def column_segment_identifier(column_segment_number: int):
+	"Return strings like A, B, C, … Z, AA, AB, AC…."
+	hundreds = column_segment_number // (26 * 26) % 26
+	tens = column_segment_number // 26 % 26
+	units = column_segment_number % 26
+	diagnostic_mode = False
+	if diagnostic_mode:
+		print(hundreds, tens, units)
+		alphabet_h = [ '' ] + [ chr(x) for x in range(0x1d586, 0x1d5a0) ]
+		alphabet_t = [ '' ] + [ chr(x) for x in range(0x1d5a0, 0x1d5ba) ]
+		alphabet_u = string.ascii_uppercase
+		alphabet_h = alphabet_t = [ '' ] + list(string.ascii_uppercase)
+		alphabet_u = string.ascii_uppercase
+	else:
+		alphabet_h = alphabet_t = [ '' ] + list(string.ascii_uppercase)
+		alphabet_u = string.ascii_uppercase
+	return (''
+		+ (alphabet_h[hundreds] if hundreds else '')
+		+ (alphabet_t[tens] if tens or hundreds else '')
+		+ alphabet_u[units]
+	)
+	
+def test_column_segment_identifier(die_on_failure=True):
+	def test_one(column_segment_number: int, expected: str):
+		sys.stdout.write('{}\te {}\t'.format(column_segment_number, expected))
+		sys.stdout.flush()
+
+		try:
+			result = column_segment_identifier(column_segment_number)
+		except BaseException as e:
+			if die_on_failure:
+				raise
+			else:
+				print('{}: {}'.format(type(e).__name__, e), file=sys.stderr)
+			result = None
+
+		print('r', result)
+		sys.stdout.flush()
+		if die_on_failure:
+			assert result == expected
+		else:
+			print('FAIL!' if result != expected else 'PASS')
+	test_one(0, 'A')
+	test_one(25, 'Z')
+	test_one(26, 'AA')
+	test_one(26 + 25, 'AZ')
+	test_one(26 + 26, 'BA')
+
 def output_path_for_input_path(input_path: pathlib.Path, column_segment_number: int, row_segment_number: int, opts: argparse.Namespace):
-	column_segment_letter = string.ascii_uppercase[column_segment_number]
+	column_segment_letter = column_segment_identifier(column_segment_number)
 	filename_values = {
 		'basename': input_path.stem,
 		'row_segment': row_segment_number,
