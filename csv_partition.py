@@ -143,8 +143,9 @@ def main():
 	opts = parser.parse_args()
 
 	column_renames = {}
-	for old_name, new_name in opts.column_name_pairs:
-		column_renames[old_name] = new_name
+	if opts.column_name_pairs:
+		for old_name, new_name in opts.column_name_pairs:
+			column_renames[old_name] = new_name
 	opts.column_renames = column_renames
 
 	for input_path in opts.input_paths:
