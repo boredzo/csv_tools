@@ -66,7 +66,8 @@ def output_path_for_input_path(input_path: pathlib.Path, column_segment_number: 
 		'column_segment': column_segment_letter,
 	}
 	filename = opts.output_filename_format.format(**filename_values)
-	output_path = (pathlib.Path(filename)).with_suffix(input_path.suffix)
+	# Note: with_suffix breaks when filename has a period in it; pathlib thinks the part after the period is a suffix and replaces it.
+	output_path = pathlib.Path(filename + input_path.suffix)
 
 	output_dir = opts.output_directory
 	if output_dir is not None:
