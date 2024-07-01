@@ -166,7 +166,7 @@ if __name__ == "__main__":
 			try:
 				column_idx = header.index(column_name)
 			except ValueError:
-				sys.exit('Column {} not found'.format(repr(column_name)))
+				sys.exit('Column {} not found among columns: {}'.format(repr(column_name), repr(header)))
 
 			operator = next(terms_iter)
 			try:
