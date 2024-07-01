@@ -99,7 +99,7 @@ def get_from_indexes(orig_row, indexes):
 	return permuted_row
 
 def column_segment_permutations(orig_header: list, opts: argparse.Namespace):
-	leading_columns = opts.common_columns
+	leading_columns = opts.common_columns or []
 	all_indexes = make_permutation(orig_header, leading_columns)
 	if opts.columns_per_file == 0:
 		# We're not segmenting, so return the all permutation.
