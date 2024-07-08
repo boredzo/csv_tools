@@ -151,6 +151,7 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 
 def main():
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--input-encoding', action='store', default='utf-8', help='Encoding to use for decoding the input file.')
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
 	parser.add_argument('input_path', type=pathlib.Path, help="Path to a file containing CSV data to select from.")
@@ -160,7 +161,7 @@ def main():
 	writer = csv.writer(sys.stdout)
 
 	path = opts.input_path
-	with open(path, 'r') as f:
+	with open(path, 'r', encoding=opts.input_encoding) as f:
 		reader = csv.reader(f)
 		header = next(reader)
 
