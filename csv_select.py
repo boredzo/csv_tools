@@ -143,7 +143,7 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 
 	return row_count
 
-if __name__ == "__main__":
+def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
@@ -206,3 +206,6 @@ if __name__ == "__main__":
 
 		row_count = select_rows(reader, header, criteria, writer, opts)
 		print('{}\t{:n}'.format(path, row_count), file=sys.stderr)
+
+if __name__ == "__main__":
+	main()
