@@ -115,6 +115,12 @@ class Criterion:
 #		print('C{}\tO{}\tV{}\tR{}'.format(self.evaluator.comparand, self.evaluator.operator, value, 'TRUE' if self.evaluator(value) else 'FALSE'))
 		return self.evaluator(value)
 
+class AlwaysTrue(Criterion):
+	def __init__(self):
+		pass
+	def evaluate(self, row):
+		return True
+
 def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: csv.writer, opts: argparse.Namespace):
 	row_count = 0
 
@@ -148,7 +154,7 @@ def main():
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
 	parser.add_argument('input_path', type=pathlib.Path, help="Path to a file containing CSV data to select from.")
-	parser.add_argument('terms', nargs='+', help="Algebraic expressions defining the criteria. A single expression consists of COLUMN OPERATOR COMPARAND. COLUMN must be the name of one of the columns in the file; OPERATOR must be =, ≠, <, >, ≤, or ≥; COMPARAND is a single fixed value to compare to. An additional word in parentheses between the OPERATOR and COMPARAND indicates the type to interpret all values for that column (including the comparand) as; for example, “total_sold ≤ (int) 4000”. Supported types include str (default), int, and float. Compound expressions can be formed using AND. OR and NOT are not supported at this time.")
+	parser.add_argument('terms', nargs='*', help="Algebraic expressions defining the criteria. A single expression consists of COLUMN OPERATOR COMPARAND. COLUMN must be the name of one of the columns in the file; OPERATOR must be =, ≠, <, >, ≤, or ≥; COMPARAND is a single fixed value to compare to. An additional word in parentheses between the OPERATOR and COMPARAND indicates the type to interpret all values for that column (including the comparand) as; for example, “total_sold ≤ (int) 4000”. Supported types include str (default), int, and float. Compound expressions can be formed using AND. OR and NOT are not supported at this time.")
 	opts = parser.parse_args()
 
 	writer = csv.writer(sys.stdout)
@@ -160,49 +166,52 @@ def main():
 
 		criteria = []
 		terms = opts.terms
-		terms_iter = iter(terms)
-		while True:
-			column_name = next(terms_iter)
-			try:
-				column_idx = header.index(column_name)
-			except ValueError:
-				sys.exit('Column {} not found among columns: {}'.format(repr(column_name), repr(header)))
+		if not terms:
+			criteria.append(AlwaysTrue())
+		else:
+			terms_iter = iter(terms)
+			while True:
+				column_name = next(terms_iter)
+				try:
+					column_idx = header.index(column_name)
+				except ValueError:
+					sys.exit('Column {} not found among columns: {}'.format(repr(column_name), repr(header)))
 
-			operator = next(terms_iter)
-			try:
-				evaluator_class = operator_classes[operator]
-			except KeyError:
-				sys.exit('Operator {} not recognized'.format(repr(operator)))
-			else:
-				# The input syntax is (value_column operator comparand), but the criteria are evaluated as (comparand !operator value), so we need to invert the operator.
-				evaluator_class = evaluator_class.inverse
+				operator = next(terms_iter)
+				try:
+					evaluator_class = operator_classes[operator]
+				except KeyError:
+					sys.exit('Operator {} not recognized'.format(repr(operator)))
+				else:
+					# The input syntax is (value_column operator comparand), but the criteria are evaluated as (comparand !operator value), so we need to invert the operator.
+					evaluator_class = evaluator_class.inverse
 
-			type_or_comparand = next(terms_iter)
-			if type_or_comparand.startswith('(') and type_or_comparand.endswith(')'):
-				type_name = type_or_comparand[1:-1]
-				comparand = next(terms_iter)
-			else:
-				type_name = 'str'
-				comparand = type_or_comparand
+				type_or_comparand = next(terms_iter)
+				if type_or_comparand.startswith('(') and type_or_comparand.endswith(')'):
+					type_name = type_or_comparand[1:-1]
+					comparand = next(terms_iter)
+				else:
+					type_name = 'str'
+					comparand = type_or_comparand
 
-			try:
-				value_type = types_by_name[type_name]
-			except KeyError:
-				sys.exit('Type {} not recognized'.format(type_name))
+				try:
+					value_type = types_by_name[type_name]
+				except KeyError:
+					sys.exit('Type {} not recognized'.format(type_name))
 
-			column = SortColumn(column_name, column_idx, value_type=value_type)
-			criterion = Criterion(column, evaluator_class(comparand))
-			criteria.append(criterion)
-			try:
-				maybe_and = next(terms_iter)
-			except StopIteration:
-				break
-			else:
-				maybe_AND = maybe_and.upper()
-				if maybe_AND in [ 'OR', 'NOT' ]:
-					sys.exit('Conjunction {} not supported yet'.format(repr(maybe_and)))
-				elif maybe_AND not in [ 'AND', '&&' ]:
-					sys.exit('Conjunction {} not recognized'.format(repr(maybe_and)))
+				column = SortColumn(column_name, column_idx, value_type=value_type)
+				criterion = Criterion(column, evaluator_class(comparand))
+				criteria.append(criterion)
+				try:
+					maybe_and = next(terms_iter)
+				except StopIteration:
+					break
+				else:
+					maybe_AND = maybe_and.upper()
+					if maybe_AND in [ 'OR', 'NOT' ]:
+						sys.exit('Conjunction {} not supported yet'.format(repr(maybe_and)))
+					elif maybe_AND not in [ 'AND', '&&' ]:
+						sys.exit('Conjunction {} not recognized'.format(repr(maybe_and)))
 
 		row_count = select_rows(reader, header, criteria, writer, opts)
 		print('{}\t{:n}'.format(path, row_count), file=sys.stderr)
