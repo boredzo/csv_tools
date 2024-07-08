@@ -137,7 +137,7 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 				break
 		else:
 			if row_count == 0:
-				writer.writerow(header if not columns_of_interest else get_from_indexes(header, indexes))
+				writer.writerow(orig_header if not columns_of_interest else get_from_indexes(header, indexes))
 			writer.writerow(orig_row if not columns_of_interest else get_from_indexes(orig_row, indexes))
 			row_count += 1
 
