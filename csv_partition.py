@@ -107,14 +107,17 @@ def column_segment_permutations(orig_header: list, opts: argparse.Namespace):
 		yield all_indexes
 	else:
 		num_leading_columns = len(leading_columns) if leading_columns else 0
-		num_trailing_columns = opts.columns_per_file - num_leading_columns
-		leading_indexes = all_indexes[:num_leading_columns]
-		trailing_offset = num_leading_columns
-		trailing_indexes = all_indexes[trailing_offset:trailing_offset + num_trailing_columns]
-		while trailing_indexes:
-			yield leading_indexes + trailing_indexes
-			trailing_offset += num_trailing_columns
+		if opts.columns_per_file == len(leading_columns):
+			yield all_indexes[:num_leading_columns]
+		else:
+			num_trailing_columns = opts.columns_per_file - num_leading_columns
+			leading_indexes = all_indexes[:num_leading_columns]
+			trailing_offset = num_leading_columns
 			trailing_indexes = all_indexes[trailing_offset:trailing_offset + num_trailing_columns]
+			while trailing_indexes:
+				yield leading_indexes + trailing_indexes
+				trailing_offset += num_trailing_columns
+				trailing_indexes = all_indexes[trailing_offset:trailing_offset + num_trailing_columns]
 
 def apply_renames(orig_header: list, renames: dict):
 	revised_header = list(orig_header)
