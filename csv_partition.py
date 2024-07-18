@@ -137,6 +137,8 @@ def segment(input_path: pathlib.Path, opts: argparse.Namespace):
 	reader = csv.reader(open(input_path, 'r', encoding=opts.input_encoding))
 	orig_header = next(reader)
 	permutations = list(column_segment_permutations(orig_header, opts))
+	if not permutations:
+		sys.exit('No columns to include in output (original column set: {!r})'.format(orig_header))
 
 	def open_files(row_segment_number):
 		out_files = []
