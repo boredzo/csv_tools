@@ -82,8 +82,10 @@ def main():
 			reader = csv.reader(f)
 			header = next(reader)
 
-			row_count = histogram(reader, header, writer, opts)
-			print('{}\t{:n}'.format(path, row_count), file=sys.stderr)
+			num_combos, num_matched, num_all = histogram(reader, header, writer, opts)
+			print('{}\t{:n}'.format('unique combinations', num_combos), file=sys.stderr)
+			print('{}\t{:n}'.format('rows counted', num_matched), file=sys.stderr)
+			print('{}\t{:n}'.format('all rows', num_all), file=sys.stderr)
 	else:
 		reader = csv.reader(sys.stdin)
 		header = next(reader)
