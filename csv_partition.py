@@ -134,7 +134,7 @@ def segment(input_path: pathlib.Path, opts: argparse.Namespace):
 	rows_per_file = opts.rows_per_file
 	rows_so_far = 0
 
-	reader = csv.reader(open(input_path, 'r'))
+	reader = csv.reader(open(input_path, 'r', encoding=opts.input_encoding))
 	orig_header = next(reader)
 	permutations = list(column_segment_permutations(orig_header, opts))
 
@@ -184,6 +184,7 @@ def parse_pair(pair_str):
 
 def main():
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--input-encoding', action='store', default='utf-8', help='Encoding to use for decoding the input file.')
 	parser.add_argument('--no-header', action='store_false', dest='include_header', default=True, help="Input files do not have header rows, so neither will output files. Default is to assume input files have header rows and reproduce each input file's header row to all segments of it.")
 	parser.add_argument('-k', '--common-columns', action='append', help='Columns to keep in every file. These columns will be moved to the start of the output.')
 	parser.add_argument('--rename-column', type=parse_pair, action='append', dest='column_name_pairs', help='Value is a comma-separated pair of column names. Each former name of a column from the input is changed to the latter in the output.')
