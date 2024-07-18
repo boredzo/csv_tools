@@ -56,7 +56,7 @@ def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: a
 	for count, selected_values in reversed(pairs):
 		writer.writerow([ count ] + list(selected_values))
 
-	return len(counter)
+	return len(pairs)
 
 def main():
 	parser = argparse.ArgumentParser()
