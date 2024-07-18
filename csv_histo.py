@@ -23,6 +23,8 @@ def has_nonempty_values(seq):
 		return False
 
 def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: argparse.Namespace):
+	num_all = 0
+
 	columns_of_interest = opts.only_columns
 	if columns_of_interest:
 		# TODO: Use csv.reader to parse this
@@ -43,6 +45,7 @@ def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: a
 	for orig_row in reader:
 		selected_values = tuple(orig_row if not indexes else get_from_indexes(orig_row, indexes))
 		counter[selected_values] += 1
+		num_all += 1
 
 	pairs = [
 		(count, selected_values)
@@ -52,11 +55,15 @@ def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: a
 	]
 	pairs.sort()
 
+	num_matched = 0
 	writer.writerow(orig_header if not columns_of_interest else get_from_indexes(orig_header, indexes))
 	for count, selected_values in reversed(pairs):
 		writer.writerow([ count ] + list(selected_values))
+		num_matched += count
 
-	return len(pairs)
+	num_combos = len(pairs)
+	num_rows = len(counter)
+	return num_combos, num_matched, num_all
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -81,8 +88,10 @@ def main():
 		reader = csv.reader(sys.stdin)
 		header = next(reader)
 
-		row_count = histogram(reader, header, writer, opts)
-		print('{}\t{:n}'.format('-', row_count), file=sys.stderr)
+		num_combos, num_matched, num_all = histogram(reader, header, writer, opts)
+		print('{}\t{:n}'.format('unique combinations', num_combos), file=sys.stderr)
+		print('{}\t{:n}'.format('rows counted', num_matched), file=sys.stderr)
+		print('{}\t{:n}'.format('all rows', num_all), file=sys.stderr)
 
 if __name__ == "__main__":
 	main()
