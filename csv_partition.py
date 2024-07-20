@@ -189,7 +189,7 @@ def main():
 	parser.add_argument('--input-encoding', action='store', default='utf-8', help='Encoding to use for decoding the input file.')
 	parser.add_argument('--no-header', action='store_false', dest='include_header', default=True, help="Input files do not have header rows, so neither will output files. Default is to assume input files have header rows and reproduce each input file's header row to all segments of it.")
 	parser.add_argument('-k', '--common-columns', action='append', help='Columns to keep in every file. These columns will be moved to the start of the output.')
-	parser.add_argument('--rename-column', type=parse_pair, action='append', dest='column_name_pairs', help='Value is a comma-separated pair of column names. Each former name of a column from the input is changed to the latter in the output.')
+	parser.add_argument('-l', '--rename-column', '--label-column', type=parse_pair, action='append', dest='column_name_pairs', help='Value is a comma-separated pair of column names. Each former name of a column from the input is changed to the latter in the output.')
 	parser.add_argument('-m', '--columns-per-file', '--max-columns', type=int, default=0, help='Split the input into segments of this many columns each. This number includes any --common-columns. Can be combined with --rows-per-file.')
 	parser.add_argument('-n', '--rows-per-file', type=int, default=0, help='Split the input into segments of this many rows each.')
 	parser.add_argument('-o', '--output-directory', default=None, type=pathlib.Path, help='Directory in which output files are created. Defaults to the same directory as each input file.')
