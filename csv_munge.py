@@ -26,11 +26,12 @@ def get_from_indexes(orig_row, indexes):
 
 #mark -
 
-def munge(reader: csv.reader, orig_header: list, writer: csv.writer, title_case_columns: list, date_columns: list):
+def munge(reader: csv.reader, orig_header: list, writer: csv.writer, title_case_columns: list, date_columns: list, values_to_replace_with_empty: list):
 	"Munge values in a table."
 	row_count = 0
 
 	munged_header = list(orig_header)
+	values_to_replace_with_empty = set(values_to_replace_with_empty)
 
 	date_column_indexes = []
 	if date_columns:
@@ -74,6 +75,9 @@ def munge(reader: csv.reader, orig_header: list, writer: csv.writer, title_case_
 
 		for orig_row in reader:
 			munged_row = list(orig_row)
+			for i, value in enumerate(orig_row):
+				if value in values_to_replace_with_empty:
+					munged_row[i] = ''
 
 			for (year_idx, month_idx, day_idx, date_fmt, date_idx) in date_column_indexes:
 				try:
@@ -108,6 +112,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--title-case', dest='title_case_columns', metavar='COLUMN', action='append', help="Name of a column whose values should be converted to Title Case. Can be used multiple times.")
 	parser.add_argument('--format-date', dest='date_columns', nargs=5, metavar=( 'YEAR_COLUMN', 'MONTH_COLUMN', 'DAY_COLUMN', 'DATE_FORMAT', 'DATE_COLUMN_NAME' ), action='append', help="Names of three existing columns, a date format, and the name for a new column to insert after the three others. For example, --format-date Year Month Day '%%Y-%%m-%%d' ISO8601Date. Can be used multiple times.")
+	parser.add_argument('--suppress', dest='values_to_replace_with_empty', action='append', metavar='SENTINEL', help="Replace all values equal to a SENTINEL with empty values. Can be used multiple times.")
 	parser.add_argument('input_path', nargs='?', default=None, type=pathlib.Path, help="Path to a files containing CSV data to process.")
 	opts = parser.parse_args()
 
@@ -117,7 +122,7 @@ def main():
 	with open(opts.input_path, 'r')  if opts.input_path else sys.stdin as f:
 		reader = csv.reader(f)
 		key_header = next(reader)
-		row_count = munge(reader, key_header, writer, opts.title_case_columns, opts.date_columns)
+		row_count = munge(reader, key_header, writer, opts.title_case_columns, opts.date_columns, opts.values_to_replace_with_empty)
 		print('{}\t{:n}'.format(path, row_count), file=sys.stderr)
 
 if __name__ == "__main__":
