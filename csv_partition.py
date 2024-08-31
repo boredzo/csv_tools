@@ -162,21 +162,25 @@ def segment(input_path: pathlib.Path, opts: argparse.Namespace):
 	row_segment_number = 1
 	out_files, writers = open_files(row_segment_number)
 
-	for row in reader:
-		if rows_per_file != 0 and rows_so_far > 0 and rows_so_far % rows_per_file == 0:
-			print('Wrote {:n} rows'.format(rows_so_far))
-			for f in out_files: f.close()
+	try:
+		for row in reader:
+			if rows_per_file != 0 and rows_so_far > 0 and rows_so_far % rows_per_file == 0:
+				print('Wrote {:n} rows'.format(rows_so_far))
+				for f in out_files: f.close()
 
-			row_segment_number += 1
-			out_files, writers = open_files(row_segment_number)
+				row_segment_number += 1
+				out_files, writers = open_files(row_segment_number)
 
-		for column_segment_number, indexes in enumerate(permutations):
-			w = writers[column_segment_number]
-			segment = get_from_indexes(row, indexes)
-			w.writerow(segment)
+			for column_segment_number, indexes in enumerate(permutations):
+				w = writers[column_segment_number]
+				segment = get_from_indexes(row, indexes)
+				w.writerow(segment)
 
-		rows_so_far += 1
-	else:
+			rows_so_far += 1
+	except UnicodeDecodeError:
+		print('Encountered a decoding error after {:n} rows'.format(rows_so_far), file=sys.stderr)
+		raise
+	finally:
 		print('Wrote a total of {:n} rows'.format(rows_so_far))
 
 def parse_pair(pair_str):
