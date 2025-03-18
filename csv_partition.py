@@ -197,6 +197,9 @@ def main():
 	parser.add_argument('input_paths', type=pathlib.Path, nargs='+', help='CSV files to read. Each file gets split separately; all segments of one input file can be re-joined to reproduce that file.')
 	opts = parser.parse_args()
 
+	if opts.output_directory:
+		opts.output_directory.mkdir(exist_ok=True, mode=0o0755)
+
 	column_renames = {}
 	if opts.column_name_pairs:
 		for old_name, new_name in opts.column_name_pairs:
