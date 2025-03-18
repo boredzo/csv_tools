@@ -5,6 +5,9 @@ import os
 import pathlib
 import argparse
 import csv
+import locale
+
+locale.setlocale(locale.LC_ALL, '')
 
 def count_records(input_path):
 	row_count = 0
