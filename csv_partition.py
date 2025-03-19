@@ -232,25 +232,29 @@ def segment(input_path: pathlib.Path, opts: argparse.Namespace):
 	max_rows_this_segment = rows_per_file - next(perturbations)
 	out_files, writers = open_files(row_segment_number, max_rows_this_segment)
 
-	for row in reader:
-		if max_rows_this_segment != 0 and rows_so_far_this_segment > 0 and rows_so_far_this_segment % max_rows_this_segment == 0:
-			print('Wrote {:n} rows'.format(rows_so_far_this_segment))
-			for f in out_files: f.close()
+	try:
+		for row in reader:
+			if max_rows_this_segment != 0 and rows_so_far_this_segment > 0 and rows_so_far_this_segment % max_rows_this_segment == 0:
+				print('Wrote {:n} rows'.format(rows_so_far_this_segment))
+				for f in out_files: f.close()
 
-			row_segment_number += 1
-			rows_so_far_this_segment = 0
-			perturb = next(perturbations)
-			max_rows_this_segment = rows_per_file - perturb
-			out_files, writers = open_files(row_segment_number, max_rows_this_segment)
+				row_segment_number += 1
+				rows_so_far_this_segment = 0
+				perturb = next(perturbations)
+				max_rows_this_segment = rows_per_file - perturb
+				out_files, writers = open_files(row_segment_number, max_rows_this_segment)
 
-		for column_segment_number, indexes in enumerate(permutations):
-			w = writers[column_segment_number]
-			segment = get_from_indexes(row, indexes)
-			w.writerow(segment)
+			for column_segment_number, indexes in enumerate(permutations):
+				w = writers[column_segment_number]
+				segment = get_from_indexes(row, indexes)
+				w.writerow(segment)
 
-		rows_so_far_this_segment += 1
-		rows_so_far += 1
-	else:
+			rows_so_far_this_segment += 1
+			rows_so_far += 1
+	except UnicodeDecodeError:
+		print('Encountered a decoding error after {:n} rows'.format(rows_so_far), file=sys.stderr)
+		raise
+	finally:
 		print('Wrote a total of {:n} rows'.format(rows_so_far))
 
 def parse_pair(pair_str):
