@@ -115,6 +115,24 @@ class Criterion:
 #		print('C{}\tO{}\tV{}\tR{}'.format(self.evaluator.comparand, self.evaluator.operator, value, 'TRUE' if self.evaluator(value) else 'FALSE'))
 		return self.evaluator(value)
 
+class AndCriterion:
+	def __init__(self, subcriteria: list):
+		self.subcriteria = list(subcriteria)
+	def evaluate(self, row):
+		truth = True
+		for sub in self.subcriteria:
+			truth = truth and sub.evaluate(row)
+		return truth
+
+class OrCriterion:
+	def __init__(self, subcriteria: list):
+		self.subcriteria = list(subcriteria)
+	def evaluate(self, row):
+		truth = False
+		for sub in self.subcriteria:
+			truth = truth or sub.evaluate(row)
+		return truth
+
 class AlwaysTrue(Criterion):
 	def __init__(self):
 		pass
@@ -169,6 +187,7 @@ def main():
 		header = next(reader)
 
 		criteria = []
+		conjunction = None
 		terms = opts.terms
 		if not terms:
 			criteria.append(AlwaysTrue())
@@ -212,12 +231,20 @@ def main():
 					break
 				else:
 					maybe_AND = maybe_and.upper()
-					if maybe_AND in [ 'OR', 'NOT' ]:
+					if maybe_AND in [ 'NOT' ]:
 						sys.exit('Conjunction {} not supported yet'.format(repr(maybe_and)))
-					elif maybe_AND not in [ 'AND', '&&' ]:
+					elif maybe_AND in [ 'AND', '&&' ]:
+						if conjunction == OrCriterion:
+							sys.exit('Mixing/nesting conjunctions not supported yet')
+						conjunction = AndCriterion
+					elif maybe_AND in [ 'OR', '||' ]:
+						if conjunction == AndCriterion:
+							sys.exit('Mixing/nesting conjunctions not supported yet')
+						conjunction = OrCriterion
+					else:
 						sys.exit('Conjunction {} not recognized'.format(repr(maybe_and)))
 
-		row_count = select_rows(reader, header, criteria, writer, opts)
+		row_count = select_rows(reader, header, [ conjunction(criteria) ] if conjunction else criteria, writer, opts)
 		print('{}\t{:n}'.format(path, row_count), file=sys.stderr)
 
 if __name__ == "__main__":
