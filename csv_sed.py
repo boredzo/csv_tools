@@ -48,6 +48,10 @@ if __name__ == "__main__":
 	parser.add_argument('-e', '--execute', action='append', dest='sed_commands', help='One line of sed program to execute. Can contain multiple commands separated with ;, be used multiple times, or both.')
 	parser.add_argument('-c', '--column', action='append', dest='columns_to_filter', help='One column to apply sed commands to. By default, filter all columns.')
 	parser.add_argument('-C', '--exclude-column', action='append', dest='columns_to_not_filter', help='One column to pass through unmodified instead of filtering. Redundant if -c is also used. Naming a column with both options is an error.')
+	# TODO: Add options for dealing with multi-line values.
+	# One possibility is an option to promise that the transformation won't change the number of lines; if given, the tool should count the lines in the input value and read that many lines for the output value.
+	# Another is an option to run sed once per value, rather than once per column. (This will run sed a great many times.)
+	# Another is to write a sentinel value between values. When -n is used, if the sentinel(s) are constant, a hidden '/^(sentinel0|sentinel1|sentinel2…)-([0-9]+)$/p' could be added to the commands list to ensure sentinels continue to be passed through. (The number would be the hash of each input value, to further help prevent collisions between real values and sentinels.)
 	parser.add_argument('input_path', type=pathlib.Path, nargs='?', default='-', help="Path to a file containing CSV data to process. If omitted, read from stdin.")
 	opts = parser.parse_args()
 
