@@ -43,7 +43,7 @@ class CSVSource:
 		return iter(self.reader)
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser()
+	parser = argparse.ArgumentParser(help='Use the stream editor sed(1) to process every value in any, some, or every column(s).\nWARNING: Output may be incorrect when multi-line values are involved. Be sure to check the output!')
 	parser.add_argument('-n', '--no-automatic-print', dest='automatic_print', action='store_false', default=True, help="Only print row when explicitly ordered to by the sed program. Does not apply to the header row, which is always printed.")
 	parser.add_argument('-e', '--execute', action='append', dest='sed_commands', help='One line of sed program to execute. Can contain multiple commands separated with ;, be used multiple times, or both.')
 	parser.add_argument('-c', '--column', action='append', dest='columns_to_filter', help='One column to apply sed commands to. By default, filter all columns.')
@@ -106,6 +106,8 @@ if __name__ == "__main__":
 
 		for sed, col, column_idx in zip(seds, columns_to_filter, column_indexes):
 			orig_value = orig_row[column_idx]
+			if '\n' in orig_value:
+				print('WARNING: Multi-line value detected in column {} of row {:n}; output may be corrupt from this point on'.format(col, counted_source.count()), file=sys.stderr)
 			sed.stdin.write(orig_value.encode('utf-8') + b'\n')
 			sed.stdin.flush()
 
