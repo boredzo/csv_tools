@@ -13,6 +13,17 @@ def get_from_indexes(orig_row, indexes):
 	permuted_row = [ orig_row[i] for i in indexes ]
 	return permuted_row
 
+def apply_renames(orig_header: list, renames: dict):
+	revised_header = list(orig_header)
+	for old_name, new_name in renames.items():
+		try:
+			idx = orig_header.index(old_name)
+		except ValueError:
+			pass
+		else:
+			revised_header[idx] = new_name
+	return revised_header
+
 def has_nonempty_values(seq):
 	"Iterate through the iterable seq and return True if any non-empty (truthy) value is encountered. Return False if not."
 	for x in seq:
@@ -151,9 +162,19 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 			try:
 				idx = orig_header.index(col)
 			except ValueError:
-				pass
-			else:
-				indexes.append(idx)
+				for orig_col, renamed_col in opts.column_renames.items():
+					if renamed_col == col:
+						break
+				else:
+					sys.exit('Unknown column: {!r}'.format(col))
+
+				idx = orig_header.index(orig_col)
+			indexes.append(idx)
+
+		munged_header = get_from_indexes(orig_header, indexes)
+	else:
+		munged_header = orig_header
+	munged_header = apply_renames(munged_header, opts.column_renames)
 
 	for orig_row in reader:
 		for criterion in criteria:
@@ -161,7 +182,7 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 				break
 		else:
 			if row_count == 0:
-				writer.writerow(orig_header if not columns_of_interest else get_from_indexes(orig_header, indexes))
+				writer.writerow(munged_header)
 			writer.writerow(orig_row if not columns_of_interest else get_from_indexes(orig_row, indexes))
 			row_count += 1
 		if opts.limit and row_count >= opts.limit:
@@ -234,15 +255,27 @@ def csv_select(f, path: str, writer, opts):
 	row_count = select_rows(reader, header, [ conjunction(criteria) ] if conjunction else criteria, writer, opts)
 	print('{}\t{:n}'.format(path, row_count), file=sys.stderr)
 
+def parse_pair(pair_str):
+	# TODO: Use csv.reader here
+	old_name, new_name = pair_str.split(',')
+	return (old_name, new_name)
+
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input-encoding', action='store', default='utf-8', help='Encoding to use for decoding the input file.')
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
+	parser.add_argument('-l', '--rename-column', '--label-column', type=parse_pair, action='append', dest='column_name_pairs', help='Value is a comma-separated pair of column names. Each former name of a column from the input is changed to the latter in the output.')
 	parser.add_argument('--limit', type=int, default=None, help="Stop reading after this many matching rows. Defaults to showing all matches.")
 	parser.add_argument('input_path', type=pathlib.Path, help="Path to a file containing CSV data to select from.")
 	parser.add_argument('terms', nargs='*', help="Algebraic expressions defining the criteria. A single expression consists of COLUMN OPERATOR COMPARAND. COLUMN must be the name of one of the columns in the file; OPERATOR must be =, ≠, <, >, ≤, or ≥; COMPARAND is a single fixed value to compare to. An additional word in parentheses between the OPERATOR and COMPARAND indicates the type to interpret all values for that column (including the comparand) as; for example, “total_sold ≤ (int) 4000”. Supported types include str (default), int, and float. Compound expressions can be formed using AND. OR and NOT are not supported at this time.")
 	opts = parser.parse_args()
+
+	column_renames = {}
+	if opts.column_name_pairs:
+		for old_name, new_name in opts.column_name_pairs:
+			column_renames[old_name] = new_name
+	opts.column_renames = column_renames
 
 	writer = csv.writer(sys.stdout)
 
