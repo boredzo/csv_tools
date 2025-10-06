@@ -25,6 +25,9 @@ if __name__ == "__main__":
 	parser.add_argument('input_paths', type=pathlib.Path, nargs='*', help="Path to one or more files containing CSV data to count rows of. If omitted, read from stdin.")
 	opts = parser.parse_args()
 
+	if len(opts.input_paths) > 1:
+		print('count\tfile')
+
 	if opts.input_paths:
 		total_row_count = 0
 		for input_path in opts.input_paths:
