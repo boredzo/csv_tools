@@ -31,17 +31,17 @@ if __name__ == "__main__":
 			with open(input_path, 'r') as input_file:
 				row_count = count_records(input_file)
 				if len(opts.input_paths) > 1:
-					print('{}\t{:n}'.format(input_path, row_count))
+					print('{:n}\t{}'.format(row_count, input_path))
 				else:
 					print('{:n}'.format(row_count))
 				total_row_count += row_count
-		print('{}\t{:n}'.format('total', total_row_count))
+		print('{:n}\t{}'.format(total_row_count, 'total'))
 	else:
 		path = '-'
 		input_file = sys.stdin
 
 		row_count = count_records(input_file)
 		if len(opts.input_paths) > 1:
-			print('{}\t{:n}'.format(path, row_count))
+			print('{:n}\t{}'.format(row_count, path))
 		else:
 			print('{:n}'.format(row_count))
