@@ -25,26 +25,27 @@ if __name__ == "__main__":
 	parser.add_argument('input_paths', type=pathlib.Path, nargs='*', help="Path to one or more files containing CSV data to count rows of. If omitted, read from stdin.")
 	opts = parser.parse_args()
 
-	if len(opts.input_paths) > 1:
-		print('count\tfile')
-
 	if opts.input_paths:
 		total_row_count = 0
+		counts_and_files = []
+
 		for input_path in opts.input_paths:
 			with open(input_path, 'r') as input_file:
 				row_count = count_records(input_file)
-				if len(opts.input_paths) > 1:
-					print('{:n}\t{}'.format(row_count, input_path))
-				else:
-					print('{:n}'.format(row_count))
+				counts_and_files.append((row_count, input_path))
 				total_row_count += row_count
-		print('{:n}\t{}'.format(total_row_count, 'total'))
+
+		if len(counts_and_files) > 1:
+			print('count\tfile')
+			for row_count, input_path in counts_and_files:
+				print('{:n}\t{}'.format(row_count, input_path))
+			print('{:n}\t{}'.format(total_row_count, 'total'))
+		else:
+			for row_count, input_path in counts_and_files:
+				print('{:n}'.format(row_count))
 	else:
 		path = '-'
 		input_file = sys.stdin
 
 		row_count = count_records(input_file)
-		if len(opts.input_paths) > 1:
-			print('{:n}\t{}'.format(row_count, path))
-		else:
-			print('{:n}'.format(row_count))
+		print('{:n}'.format(row_count))
