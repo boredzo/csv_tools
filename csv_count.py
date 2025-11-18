@@ -36,6 +36,8 @@ if __name__ == "__main__":
 				total_row_count += row_count
 
 		if len(counts_and_files) > 1:
+			counts_and_files.sort(reverse=True)
+
 			print('count\tfile')
 			for row_count, input_path in counts_and_files:
 				print('{:n}\t{}'.format(row_count, input_path))
