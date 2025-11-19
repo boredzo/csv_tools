@@ -79,7 +79,7 @@ def make_path_safe(filename: str):
 	return filename.replace('/', '_')
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(desc="Convert an Excel .xlsx file to a CSV.")
+	parser = argparse.ArgumentParser(description="Convert an Excel .xlsx file to a CSV.")
 	parser.add_argument('input_paths', type=pathlib.Path, nargs='*', help="Path to one or more files containing CSV data to count rows of. If omitted, read from stdin.")
 	opts = parser.parse_args()
 
