@@ -9,11 +9,11 @@ import locale
 
 locale.setlocale(locale.LC_ALL, '')
 
-def cat(input_path, key_header, writer):
+def cat(input_path, key_header, writer, opts):
 	row_count = 0
 
 	with open(input_path, 'r') as input_file:
-		reader = csv.reader(input_file)
+		reader = csv.reader(input_file, quotechar=opts.quote_character)
 		header = next(reader)
 		if key_header is None:
 			key_header = header
@@ -30,6 +30,7 @@ def cat(input_path, key_header, writer):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--quote-character', '--quote-char', '--quotechar', default='"', help='Set the quote character used for parsing quoted values. Defaults to ".')
 	parser.add_argument('input_paths', type=pathlib.Path, nargs='+', help="Path to one or more files containing CSV data to concatenate into one large file. The first file's header determines the schema of all others; any files with a different header will be skipped.")
 	opts = parser.parse_args()
 
@@ -38,7 +39,7 @@ if __name__ == "__main__":
 	total_row_count = 0
 	key_header = None
 	for path in opts.input_paths:
-		header, row_count = cat(path, key_header, writer)
+		header, row_count = cat(path, key_header, writer, opts)
 		if key_header is None:
 			key_header = header
 		if row_count is None:
