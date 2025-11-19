@@ -10,59 +10,88 @@ import locale
 
 locale.setlocale(locale.LC_ALL, '')
 
-def lint(input_file, input_file_isoLatin1, verbose, quote_character):
-	try:
-		row_count = 0
+class Diagnostic:
+	def __init__(self, first_row_number: int, message: str):
+		self.message = message
+		self.range = range(first_row_number, first_row_number+1)
+		self.specimens = {}
 
-		reader = csv.reader(input_file, quotechar=quote_character)
-		header = next(reader)
+	def does_row_extend_range(self, row_number: int):
+		return row_number == self.range.stop
+	def record_as_found_on_row(self, row_number: int, row: list):
+		self.range = range(self.range.start, row_number + 1)
+		self.specimens[row_number] = row
 
-		expected_column_count = len(header)
+	def __len__(self):
+		return len(self.range)
 
-		for row in reader:
-			row_count += 1
-			# NOTE: The row numbers here are intentionally not put through {:n} so they can be passed to various “go to line” commands in text editors and spreadsheets.
-			this_column_count = len(row)
-			if this_column_count < expected_column_count:
-				print('{}: Column underflow: Expected {:n} columns, got {:n}'.format(row_count, expected_column_count, this_column_count), file=sys.stderr)
+	def __str__(self):
+		# NOTE: The row numbers here are intentionally not put through {:n} so they can be passed to various “go to line” commands in text editors and spreadsheets.
+		if len(self) > 1:
+			range_str = '{}..{}'.format(self.range.start, self.range.stop - 1)
+		else:
+			range_str = '{}'.format(self.range.start)
+		return '{}: {}'.format(range_str, self.message)
+
+	def flush(self, verbose=bool):
+		if self.message is None: return
+		print(str(self), file=sys.stderr)
+		if verbose:
+			self.print_specimens()
+
+	def print_specimens(self, max_specimens=3):
+		for i, row_idx in enumerate(self.range):
+			if i >= max_specimens: break
+			row = self.specimens[row_idx]
+
+def lint_reader(reader: csv.reader, header: list, verbose: bool):
+	global g_row_count
+
+	expected_column_count = len(header)
+	last_diagnostic = Diagnostic(0, None)
+
+	for row in reader:
+		g_row_count += 1
+		this_column_count = len(row)
+		if this_column_count < expected_column_count:
+			message = 'Column underflow: Expected {:n} columns, got {:n}'.format(expected_column_count, this_column_count)
+			if last_diagnostic.message != message:
+				last_diagnostic.flush()
 				if verbose:
-					for row_idx, column, value in zip(range(len(row)), header, row):
-						print('{}\t{}\t{}'.format(row_idx, column, value or '(empty)'))
-			elif this_column_count > expected_column_count:
-				print('{}: Column overflow: Expected {:n} columns, got {:n}'.format(row_count, expected_column_count, this_column_count), file=sys.stderr)
+					for col_idx, column, value in zip(range(len(row)), header, row):
+						print('{}\t{}\t{}'.format(col_idx, column, value or '(empty)'))
+				last_diagnostic = Diagnostic(g_row_count, message)
+			last_diagnostic.record_as_found_on_row(g_row_count, row)
+		elif this_column_count > expected_column_count:
+			message = 'Column overflow: Expected {:n} columns, got {:n}'.format(expected_column_count, this_column_count)
+			if last_diagnostic.message != message:
+				last_diagnostic.flush()
 				if verbose:
 					extension = [ '???' ] * (len(row) - len(header))
 					for row_idx, column, value in zip(range(len(row)), header + extension, row):
 						print('{}\t{}\t{}'.format(row_idx, column, value or '(empty)'))
+				last_diagnostic = Diagnostic(g_row_count, message)
+			last_diagnostic.record_as_found_on_row(g_row_count, row)
+
+	return g_row_count
+
+def lint(input_file, input_file_isoLatin1, verbose, quote_character):
+	global g_row_count
+	try:
+		g_row_count = 0
+
+		reader = csv.reader(input_file, quotechar=quote_character)
+		header = next(reader)
+		row_count = lint_reader(reader, header, verbose)
 	except UnicodeDecodeError:
-		row_count += 1
-		print('{}: Failed to decode UTF-8. Failing over to ISO-8859-1.'.format(row_count), file=sys.stderr)
-		last_row_count = row_count
-		row_count = 0
+		g_row_count += 1
+		print('{}: Failed to decode UTF-8. Failing over to ISO-8859-1.'.format(g_row_count), file=sys.stderr)
+		g_row_count = 0
 
 		reader = csv.reader(input_file_isoLatin1, quotechar=quote_character)
 		header = next(reader)
 
-		expected_column_count = len(header)
-
-		for row in reader:
-			row_count += 1
-			if row_count < last_row_count:
-				continue
-
-			# NOTE: The row numbers here are intentionally not put through {:n} so they can be passed to various “go to line” commands in text editors and spreadsheets.
-			this_column_count = len(row)
-			if this_column_count < expected_column_count:
-				print('{}: Column underflow: Expected {:n} columns, got {:n}'.format(row_count, expected_column_count, this_column_count), file=sys.stderr)
-				if verbose:
-					for row_idx, column, value in zip(range(len(row)), header, row):
-						print('{}\t{}\t{}'.format(row_idx, column, value or '(empty)'))
-			elif this_column_count > expected_column_count:
-				print('{}: Column overflow: Expected {:n} columns, got {:n}'.format(row_count, expected_column_count, this_column_count), file=sys.stderr)
-				if verbose:
-					extension = [ '???' ] * (len(row) - len(header))
-					for row_idx, column, value in zip(range(len(row)), header + extension, row):
-						print('{}\t{}\t{}'.format(row_idx, column, value or '(empty)'))
+		row_count = lint_reader(reader, header, verbose)
 
 	return row_count
 
