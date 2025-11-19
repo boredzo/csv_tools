@@ -10,11 +10,11 @@ import locale
 
 locale.setlocale(locale.LC_ALL, '')
 
-def lint(input_file, input_file_isoLatin1, verbose):
+def lint(input_file, input_file_isoLatin1, verbose, quote_character):
 	try:
 		row_count = 0
 
-		reader = csv.reader(input_file)
+		reader = csv.reader(input_file, quotechar=quote_character)
 		header = next(reader)
 
 		expected_column_count = len(header)
@@ -40,7 +40,7 @@ def lint(input_file, input_file_isoLatin1, verbose):
 		last_row_count = row_count
 		row_count = 0
 
-		reader = csv.reader(input_file_isoLatin1)
+		reader = csv.reader(input_file_isoLatin1, quotechar=quote_character)
 		header = next(reader)
 
 		expected_column_count = len(header)
@@ -69,6 +69,7 @@ def lint(input_file, input_file_isoLatin1, verbose):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-v', '--verbose', default=False, action='store_true')
+	parser.add_argument('--quote-character', '--quote-char', '--quotechar', default='"', help='Set the quote character used for parsing quoted values. Defaults to ".')
 	parser.add_argument('input_paths', type=pathlib.Path, nargs='*', help="Path to one or more files containing CSV data to count rows of. If omitted, read from stdin.")
 	opts = parser.parse_args()
 
@@ -77,7 +78,7 @@ if __name__ == "__main__":
 		for input_path in opts.input_paths:
 			with open(input_path, 'r') as input_file:
 				with open(input_path, 'r', encoding='iso-8859-1') as input_file_isoLatin1:
-					row_count = lint(input_file, input_file_isoLatin1, opts.verbose)
+					row_count = lint(input_file, input_file_isoLatin1, opts.verbose, opts.quote_character)
 					if len(opts.input_paths) > 1:
 						print('{}\t{:n}'.format(input_path, row_count))
 					else:
