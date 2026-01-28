@@ -122,7 +122,11 @@ class Criterion:
 		self.column = column
 		self.evaluator = evaluator
 	def evaluate(self, row):
-		value = row[self.column.column_index]
+		try:
+			value = row[self.column.column_index]
+		except IndexError:
+			print('Error accessing column {!r} at index {:n}: not found in row {!r}'.format(self.column.name, self.column.column_index, row), file=sys.stderr)
+			raise
 #		print('C{}\tO{}\tV{}\tR{}'.format(self.evaluator.comparand, self.evaluator.operator, value, 'TRUE' if self.evaluator(value) else 'FALSE'))
 		return self.evaluator(value)
 
@@ -178,17 +182,26 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 
 	for orig_row in reader:
 		for criterion in criteria:
-			if not criterion.evaluate(orig_row):
-				break
+			try:
+				if not criterion.evaluate(orig_row):
+					break
+			except:
+				print('Error evaluating criteria for row #{:n}:'.format(row_count), file=sys.stderr)
+				raise
 		else:
 			if opts.print_every_match:
 				if row_count == 0:
 					writer.writerow(munged_header)
-				munged_row = (
-					orig_row
-					if not columns_of_interest
-					else get_from_indexes(orig_row, indexes)
-				)
+				try:
+					munged_row = (
+						orig_row
+						if not columns_of_interest
+						else get_from_indexes(orig_row, indexes)
+					)
+				except IndexError:
+					print('Error on row #{:n}, which is too short (or contains an unescaped line break): indexes are {} but row only has {:n} columns'.format(row_count, indexes, len(orig_row)), file=sys.stderr)
+					print('Row: {}'.format(orig_row), file=sys.stderr)
+					raise
 				writer.writerow(munged_row)
 			row_count += 1
 		if opts.limit and row_count >= opts.limit:
