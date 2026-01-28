@@ -181,9 +181,15 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 			if not criterion.evaluate(orig_row):
 				break
 		else:
-			if row_count == 0:
-				writer.writerow(munged_header)
-			writer.writerow(orig_row if not columns_of_interest else get_from_indexes(orig_row, indexes))
+			if opts.print_every_match:
+				if row_count == 0:
+					writer.writerow(munged_header)
+				munged_row = (
+					orig_row
+					if not columns_of_interest
+					else get_from_indexes(orig_row, indexes)
+				)
+				writer.writerow(munged_row)
 			row_count += 1
 		if opts.limit and row_count >= opts.limit:
 			break
@@ -263,6 +269,7 @@ def parse_pair(pair_str):
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input-encoding', action='store', default='utf-8', help='Encoding to use for decoding the input file.')
+	parser.add_argument('-c', '--count', dest='print_every_match', action='store_false', default=True, help="Report the count of matches but do not print the CSV output. (Can help with performance for large datasets.)")
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
 	parser.add_argument('-l', '--rename-column', '--label-column', type=parse_pair, action='append', dest='column_name_pairs', help='Value is a comma-separated pair of column names. Each former name of a column from the input is changed to the latter in the output.')
