@@ -180,6 +180,9 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 		munged_header = orig_header
 	munged_header = apply_renames(munged_header, opts.column_renames)
 
+	if opts.distinct:
+		previous_rows = set()
+		next_count_check = 1000
 	for orig_row in reader:
 		for criterion in criteria:
 			try:
@@ -189,11 +192,13 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 				print('Error evaluating criteria for row #{:n}:'.format(row_count), file=sys.stderr)
 				raise
 		else:
+			counted = 1
 			if opts.print_every_match:
+
 				if row_count == 0:
 					writer.writerow(munged_header)
 				try:
-					munged_row = (
+					munged_row = tuple(
 						orig_row
 						if not columns_of_interest
 						else get_from_indexes(orig_row, indexes)
@@ -202,8 +207,15 @@ def select_rows(reader: csv.reader, orig_header: list, criteria: list, writer: c
 					print('Error on row #{:n}, which is too short (or contains an unescaped line break): indexes are {} but row only has {:n} columns'.format(row_count, indexes, len(orig_row)), file=sys.stderr)
 					print('Row: {}'.format(orig_row), file=sys.stderr)
 					raise
-				writer.writerow(munged_row)
-			row_count += 1
+
+				if opts.distinct and munged_row in previous_rows:
+					counted = 0
+				else:
+					writer.writerow(munged_row)
+					if opts.distinct:
+						previous_rows.add(munged_row)
+
+			row_count += counted
 		if opts.limit and row_count >= opts.limit:
 			break
 
@@ -286,6 +298,7 @@ def main():
 	parser.add_argument('--only-nonempty', '--only-non-empty', action='store_true', default=False, help="Select only rows for which any non-excluded column contains data.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to include in the output. Defaults to all columns.")
 	parser.add_argument('-l', '--rename-column', '--label-column', type=parse_pair, action='append', dest='column_name_pairs', help='Value is a comma-separated pair of column names. Each former name of a column from the input is changed to the latter in the output.')
+	parser.add_argument('--distinct', action='store_true', default=False, help="Only print unique combinations—if all of a row's values are encountered again on one or more subsequent rows, don't print those rows, only the first one.")
 	parser.add_argument('--limit', type=int, default=None, help="Stop reading after this many matching rows. Defaults to showing all matches.")
 	parser.add_argument('input_path', type=pathlib.Path, help="Path to a file containing CSV data to select from.")
 	parser.add_argument('terms', nargs='*', help="Algebraic expressions defining the criteria. A single expression consists of COLUMN OPERATOR COMPARAND. COLUMN must be the name of one of the columns in the file; OPERATOR must be =, ≠, <, >, ≤, or ≥; COMPARAND is a single fixed value to compare to. An additional word in parentheses between the OPERATOR and COMPARAND indicates the type to interpret all values for that column (including the comparand) as; for example, “total_sold ≤ (int) 4000”. Supported types include str (default), int, and float. Compound expressions can be formed using AND. OR and NOT are not supported at this time.")
