@@ -3,6 +3,7 @@
 import sys
 import os
 import pathlib
+import re
 import argparse
 import csv
 import locale
@@ -46,10 +47,64 @@ class SortColumn:
 			value = ReversedComparable(value)
 		return value
 
+# This regex only matches the year, month, and day. Time components are currently not used.
+class DateRange:
+	ymd_exp = re.compile('(?P<YEAR>[0-9]+)(?:-(?P<MONTH>[0-9]+)(?:-(?P<DAY>[0-9]+))?)?')
+
+	def __init__(self, datestr: str, scope: str):
+		self.scope = scope
+		match = self.ymd_exp.match(datestr)
+		if match:
+			if scope == 'day' and match.group('DAY'):
+				self.components = [ int(match.group('YEAR')), int(match.group('MONTH')), int(match.group('DAY')) ]
+			elif scope == 'month' and match.group('MONTH'):
+				self.components = [ int(match.group('YEAR')), int(match.group('MONTH')) ]
+			elif scope == 'year' and match.group('YEAR'):
+				self.components = [ int(match.group('YEAR')) ]
+			else:
+				raise ValueError('wrong number of components for {} in value {!r}', scope, datestr)
+		else:
+			raise ValueError("can't parse {!r} as a year-month-day date", datestr)
+
+	def __contains__(self, value):
+		match = self.ymd_exp.match(value)
+
+		components = [ int(match.group('YEAR')) ]
+		if match.group('MONTH') is not None:
+			components.append(int(match.group('MONTH')))
+		if match.group('DAY') is not None:
+			components.append(int(match.group('DAY')))
+
+		return components[:len(self.components)] == self.components
+
+	@classmethod
+	def measure_scope(self, value, _scopes=[ 'year', 'month', 'day' ]):
+		match = self.ymd_exp.match(value)
+
+		if match:
+			if match.group('DAY'):
+				return 'day'
+			elif match.group('MONTH'):
+				return 'month'
+			elif match.group('YEAR'):
+				return 'year'
+
+		return None
+
+def year(value):
+	return DateRange(value, 'year')
+def month(value):
+	return DateRange(value, 'month')
+def day(value):
+	return DateRange(value, 'day')
+
 types_by_name = {
 	'str': str,
 	'int': int,
 	'float': float,
+	'year': year,
+	'month': month,
+	'day': day,
 }
 class Evaluator:
 	def __init__(self, comparand):
@@ -116,6 +171,24 @@ operator_classes['LT'] = operator_classes['<']
 operator_classes['GT'] = operator_classes['>']
 operator_classes['LE'] = operator_classes['≤']
 operator_classes['GE'] = operator_classes['≥']
+
+class EvaluatorIncludes(Evaluator):
+	"INCLUDES is meant for use with date values: YEAR, MONTH, and DAY."
+	def __call__(self, value):
+		return self.comparand in value
+class EvaluatorWithin(Evaluator):
+	"IS WITHIN is meant for use with date values: YEAR, MONTH, and DAY."
+	def __call__(self, value):
+		return value in self.comparand
+class EvaluatorWithout(Evaluator):
+	"IS WITHOUT is meant for use with date values: YEAR, MONTH, and DAY."
+	def __call__(self, value):
+		return value not in self.comparand
+EvaluatorWithin.inverse = EvaluatorIncludes
+EvaluatorIncludes.inverse = EvaluatorWithin
+operator_classes['IS WITHIN'] = EvaluatorWithin
+operator_classes['WITHIN'] = EvaluatorWithin
+operator_classes['INCLUDES'] = EvaluatorIncludes
 
 class Criterion:
 	def __init__(self, column: SortColumn, evaluator: Evaluator):
@@ -256,8 +329,12 @@ def csv_select(f, path: str, writer, opts):
 				type_name = type_or_comparand[1:-1]
 				comparand = next(terms_iter)
 			else:
-				type_name = 'str'
 				comparand = type_or_comparand
+				appropriate_scope = DateRange.measure_scope(comparand)
+				if appropriate_scope:
+					type_name = appropriate_scope
+				else:
+					type_name = 'str'
 
 			try:
 				value_type = types_by_name[type_name.lower()]
