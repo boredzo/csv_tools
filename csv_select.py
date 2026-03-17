@@ -260,7 +260,7 @@ def csv_select(f, path: str, writer, opts):
 				comparand = type_or_comparand
 
 			try:
-				value_type = types_by_name[type_name]
+				value_type = types_by_name[type_name.lower()]
 			except KeyError:
 				sys.exit('Type {} not recognized'.format(type_name))
 
