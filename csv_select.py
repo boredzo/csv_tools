@@ -127,6 +127,9 @@ class Criterion:
 		except IndexError:
 			print('Error accessing column {!r} at index {:n}: not found in row {!r}'.format(self.column.name, self.column.column_index, row), file=sys.stderr)
 			raise
+
+		value = self.column.parse_value(value)
+
 #		print('C{}\tO{}\tV{}\tR{}'.format(self.evaluator.comparand, self.evaluator.operator, value, 'TRUE' if self.evaluator(value) else 'FALSE'))
 		return self.evaluator(value)
 
