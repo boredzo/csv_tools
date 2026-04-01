@@ -86,7 +86,7 @@ class DateRange:
 				return 'day'
 			elif match.group('MONTH'):
 				return 'month'
-			elif match.group('YEAR'):
+			elif match.group('YEAR') and len(match.group('YEAR')) >= 4:
 				return 'year'
 
 		return None
