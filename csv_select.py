@@ -198,8 +198,12 @@ class Criterion:
 		try:
 			value = row[self.column.column_index]
 		except IndexError:
-			print('Error accessing column {!r} at index {:n}: not found in row {!r}'.format(self.column.name, self.column.column_index, row), file=sys.stderr)
-			raise
+			if self.column.column_index == 0 and not row:
+				# First column, empty row: Treat this as an empty value.
+				value = ''
+			else:
+				print('Error accessing column {!r} at index {:n}: not found in row {!r}'.format(self.column.name, self.column.column_index, row), file=sys.stderr)
+				raise
 
 		value = self.column.parse_value(value)
 
