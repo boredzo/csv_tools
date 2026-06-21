@@ -76,6 +76,15 @@ class DiagnosticColumnOverflow(Diagnostic):
 def lint_reader(reader: csv.reader, header: list, verbose: bool):
 	global g_row_count
 
+	seen_cols = set()
+	dup_cols = []
+	for col in header:
+		if col in seen_cols and col not in dup_cols:
+			dup_cols.append(col)
+		seen_cols.add(col)
+	if dup_cols:
+		print('Header contains duplicate columns: {}'.format(', '.join(dup_cols)), file=sys.stderr)
+
 	expected_column_count = len(header)
 	if verbose:
 		print('Expecting {:n} columns per row'.format(expected_column_count))
