@@ -57,9 +57,11 @@ def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: a
 
 	num_matched = 0
 	new_header = [ 'count' ] * opts.show_count + (orig_header if not columns_of_interest else get_from_indexes(orig_header, indexes))
-	writer.writerow(new_header)
+	if opts.print_every_row:
+		writer.writerow(new_header)
 	for count, selected_values in reversed(pairs):
-		writer.writerow([ count ] * opts.show_count + list(selected_values))
+		if opts.print_every_row:
+			writer.writerow([ count ] * opts.show_count + list(selected_values))
 		num_matched += count
 
 	num_combos = len(pairs)
@@ -69,6 +71,7 @@ def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: a
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input-encoding', action='store', default='utf-8', help='Encoding to use for decoding the input file.')
+	parser.add_argument('--only-report', dest='print_every_row', action='store_false', default=True, help="Only report counts of unique combinations and of rows counted.")
 	parser.add_argument('--only-columns', default=None, help="Comma-separated list of columns to examine. Defaults to all columns. Counts are of unique groups of values from these columns only.")
 	parser.add_argument('--show-count', action='store_true', default=True, help='Add a new column to the output for the count of each value combination.')
 	parser.add_argument('--hide-count', '--no-show-count', dest='show_count', action='store_false', help='Only output value combinations counted, not their counts.')
