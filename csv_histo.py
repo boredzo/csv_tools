@@ -34,7 +34,7 @@ def histogram(reader: csv.reader, orig_header: list, writer: csv.writer, opts: a
 			try:
 				idx = orig_header.index(col)
 			except ValueError:
-				pass
+				sys.exit('Unknown column: {!r}'.format(col))
 			else:
 				indexes.append(idx)
 	else:
